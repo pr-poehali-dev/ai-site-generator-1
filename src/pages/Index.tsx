@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +20,65 @@ function Index() {
   ]);
   const [input, setInput] = useState('');
   const [previewHTML, setPreviewHTML] = useState('<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-family:sans-serif;">Здесь появится ваш сайт</div>');
+  const [siteVersion, setSiteVersion] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const generateVariedHTML = (userInput: string, version: number) => {
+    const templates = [
+      {
+        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        textColor: 'white',
+        buttonBg: 'white',
+        buttonColor: '#667eea'
+      },
+      {
+        gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        textColor: 'white',
+        buttonBg: 'rgba(255,255,255,0.9)',
+        buttonColor: '#f5576c'
+      },
+      {
+        gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        textColor: 'white',
+        buttonBg: 'white',
+        buttonColor: '#00f2fe'
+      },
+      {
+        gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        textColor: '#1a1a1a',
+        buttonBg: '#1a1a1a',
+        buttonColor: 'white'
+      },
+      {
+        gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        textColor: 'white',
+        buttonBg: 'rgba(255,255,255,0.95)',
+        buttonColor: '#fa709a'
+      },
+      {
+        gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+        textColor: 'white',
+        buttonBg: 'white',
+        buttonColor: '#330867'
+      }
+    ];
+    
+    const template = templates[version % templates.length];
+    
+    return `
+      <div style="background: ${template.gradient}; color: ${template.textColor}; padding: 60px 20px; font-family: 'Arial', sans-serif; min-height: 100%;">
+        <h1 style="font-size: 48px; margin-bottom: 20px; text-align: center; animation: fadeIn 0.5s;">Ваш Новый Сайт</h1>
+        <p style="font-size: 20px; text-align: center; opacity: 0.9; max-width: 600px; margin: 0 auto;">${userInput}</p>
+        <div style="margin-top: 40px; text-align: center;">
+          <button style="background: ${template.buttonBg}; color: ${template.buttonColor}; border: none; padding: 15px 40px; font-size: 18px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Начать</button>
+        </div>
+      </div>
+    `;
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -33,19 +92,15 @@ function Index() {
         'Хорошая идея! Какой стиль дизайна предпочитаешь: минималистичный, яркий или корпоративный?',
         'Понял! Нужна ли форма обратной связи на сайте?',
         'Супер! Давай добавим главную страницу с описанием.',
+        'Понравилось! Какую цветовую схему хочешь использовать?',
+        'Круто! Добавим анимации или оставим строгий стиль?'
       ];
       const response = responses[Math.floor(Math.random() * responses.length)];
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
       
-      setPreviewHTML(`
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 20px; font-family: 'Arial', sans-serif; min-height: 100%;">
-          <h1 style="font-size: 48px; margin-bottom: 20px; text-align: center;">Ваш Новый Сайт</h1>
-          <p style="font-size: 20px; text-align: center; opacity: 0.9;">${input}</p>
-          <div style="margin-top: 40px; text-align: center;">
-            <button style="background: white; color: #667eea; border: none; padding: 15px 40px; font-size: 18px; border-radius: 8px; cursor: pointer;">Начать</button>
-          </div>
-        </div>
-      `);
+      const newVersion = siteVersion + 1;
+      setSiteVersion(newVersion);
+      setPreviewHTML(generateVariedHTML(input, newVersion));
     }, 500);
     
     setInput('');
@@ -140,7 +195,7 @@ function Index() {
           </div>
           
           <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
@@ -153,10 +208,11 @@ function Index() {
                         : 'bg-muted mr-4'
                     }`}
                   >
-                    {msg.content}
+                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
           
