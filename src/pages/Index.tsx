@@ -4,6 +4,9 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 
 type Page = 'home' | 'generator' | 'faq';
@@ -21,6 +24,9 @@ function Index() {
   const [input, setInput] = useState('');
   const [previewHTML, setPreviewHTML] = useState('<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-family:sans-serif;">Здесь появится ваш сайт</div>');
   const [siteVersion, setSiteVersion] = useState(0);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [siteName, setSiteName] = useState('');
+  const [publishedUrl, setPublishedUrl] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,6 +112,37 @@ function Index() {
     setInput('');
   };
 
+  const handleClearChat = () => {
+    setMessages([{ role: 'assistant', content: 'Привет! Я AI-ассистент для создания сайтов. Расскажи, какой сайт ты хочешь создать?' }]);
+    setPreviewHTML('<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-family:sans-serif;">Здесь появится ваш сайт</div>');
+    setSiteVersion(0);
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([previewHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-site.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePublish = () => {
+    if (!siteName.trim()) return;
+    
+    const generatedUrl = `https://${siteName.toLowerCase().replace(/\s+/g, '-')}.ai-gen.site`;
+    setPublishedUrl(generatedUrl);
+    
+    setTimeout(() => {
+      setShowPublishDialog(false);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `Отлично! Твой сайт опубликован по адресу: ${generatedUrl}` 
+      }]);
+    }, 1000);
+  };
+
   const renderHome = () => (
     <div className="min-h-screen">
       <div className="relative overflow-hidden">
@@ -187,11 +224,15 @@ function Index() {
       
       <div className="flex-1 grid md:grid-cols-2 gap-0 overflow-hidden">
         <div className="flex flex-col border-r border-border">
-          <div className="p-4 border-b border-border bg-muted/30">
+          <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
             <h3 className="font-heading font-semibold flex items-center gap-2">
               <Icon name="MessageSquare" size={20} />
               AI Ассистент
             </h3>
+            <Button variant="ghost" size="sm" onClick={handleClearChat}>
+              <Icon name="RefreshCw" size={16} className="mr-1" />
+              Очистить
+            </Button>
           </div>
           
           <ScrollArea className="flex-1 p-4">
@@ -234,11 +275,21 @@ function Index() {
         </div>
 
         <div className="flex flex-col bg-muted/20">
-          <div className="p-4 border-b border-border bg-muted/30">
+          <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
             <h3 className="font-heading font-semibold flex items-center gap-2">
               <Icon name="Monitor" size={20} />
               Предпросмотр Сайта
             </h3>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Icon name="Download" size={16} className="mr-1" />
+                Скачать
+              </Button>
+              <Button variant="default" size="sm" onClick={() => setShowPublishDialog(true)}>
+                <Icon name="Globe" size={16} className="mr-1" />
+                Опубликовать
+              </Button>
+            </div>
           </div>
           
           <div className="flex-1 overflow-auto bg-white">
@@ -339,6 +390,51 @@ function Index() {
   );
 
   return (
+    <>
+    <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-2xl gradient-text">Опубликовать Сайт</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="siteName">Название сайта</Label>
+            <Input
+              id="siteName"
+              placeholder="my-awesome-site"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+            />
+            {siteName && (
+              <p className="text-sm text-muted-foreground">
+                Ваш сайт будет доступен по адресу:<br />
+                <span className="font-mono text-primary">
+                  https://{siteName.toLowerCase().replace(/\s+/g, '-')}.ai-gen.site
+                </span>
+              </p>
+            )}
+          </div>
+          {publishedUrl && (
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+              <p className="text-sm font-semibold mb-2 text-primary">Сайт успешно опубликован!</p>
+              <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="text-sm underline break-all">
+                {publishedUrl}
+              </a>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
+            Отмена
+          </Button>
+          <Button onClick={handlePublish} disabled={!siteName.trim()}>
+            <Icon name="Rocket" size={16} className="mr-2" />
+            Опубликовать
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <div className="min-h-screen bg-background text-foreground">
       <nav className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -382,6 +478,7 @@ function Index() {
       {currentPage === 'generator' && renderGenerator()}
       {currentPage === 'faq' && renderFAQ()}
     </div>
+    </>
   );
 }
 
